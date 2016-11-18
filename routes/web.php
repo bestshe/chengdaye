@@ -19,4 +19,4 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index');
 
-Route::get('/list', 'Collection\CompanyController@clist');
+Route::get('/CompanyPages', 'Collection\CompanyController@CompanyPages');
