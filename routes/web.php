@@ -20,3 +20,4 @@ Auth::routes();
 Route::get('/home', 'HomeController@index');
 
 Route::get('/CompanyPages', 'Collection\CompanyController@CompanyPages');
+Route::get('/Companyinfos', 'Collection\CompanyController@Companyinfos');
