@@ -11,14 +11,14 @@ class export extends Controller
     //
     public function entlist()
     {
-        /*$certlists = DB::table('get_gd_jy_company_cert')
+        /*$certlists = DB::table('get_dg_jy_company_cert')
             ->select('id')
             ->where('bc_id',119)
             ->get();*/
-        $entlists = DB::table('get_gd_jy_company_cert')
-            ->leftJoin('get_gd_jy_company_info', 'get_gd_jy_company_cert.remote_ent_id', '=', 'get_gd_jy_company_info.remote_id')
-            ->select('get_gd_jy_company_info.fcEntname')
-            ->where('get_gd_jy_company_cert.bc_id',119)
+        $entlists = DB::table('get_dg_jy_company_cert')
+            ->leftJoin('get_dg_jy_company_info', 'get_dg_jy_company_cert.remote_ent_id', '=', 'get_dg_jy_company_info.remote_id')
+            ->select('get_dg_jy_company_info.fcEntname')
+            ->where('get_dg_jy_company_cert.bc_id',119)
             ->get();
         foreach ($entlists as $n=>$list) {
             echo $list->fcEntname.'<br>';

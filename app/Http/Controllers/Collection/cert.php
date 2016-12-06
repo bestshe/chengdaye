@@ -60,7 +60,7 @@ class cert extends Controller
         if ( !$id ){
             return '非法入内';
         }
-        $ent = DB::table('get_gd_jy_company_info')
+        $ent = DB::table('get_dg_jy_company_info')
             ->select('remote_id')
             ->where([
                 ['id',$id],
@@ -105,7 +105,7 @@ class cert extends Controller
             $data_item = json_decode($data_item,true);
             foreach($data_item as $m=>$cert){
                 //查询是否存在;
-                $repeat_cert = DB::table('get_gd_jy_company_cert')
+                $repeat_cert = DB::table('get_dg_jy_company_cert')
                     ->where(['remote_cert_id'=>$certs['id'],'cert_code'=>$cert['fcEntcertcode']])
                     ->first();
                 //重置处理数据
@@ -127,7 +127,7 @@ class cert extends Controller
                     if ( count($cert_list) ){
                         $cert_list = array_add($cert_list, 'updated_at', time());
                         //更新数据
-                        DB::table('get_gd_jy_company_cert')->where('id',$repeat_cert->id)->update($cert_list);
+                        DB::table('get_dg_jy_company_cert')->where('id',$repeat_cert->id)->update($cert_list);
                         $update_arr[$n] = array_add($update_arr[$n], 'title', $cert['fcEntcertcaption'].'===========已修改');
                         $update_arr[$n] = array_add($update_arr[$n], 'sn', $cert['fcEntcertcode'].'===========已修改');
                     }else{
@@ -159,7 +159,7 @@ class cert extends Controller
                     $cert_list['updated_at'] = time();
 
                     //插入数据
-                    DB::table('get_gd_jy_company_cert')->insert($cert_list);
+                    DB::table('get_dg_jy_company_cert')->insert($cert_list);
                     $update_arr[$n] = array_add($update_arr[$n], 'title', $cert['fcEntcertcaption'].'===========新插入');
                     $update_arr[$n] = array_add($update_arr[$n], 'sn', $cert['fcEntcertcode'].'===========新插入');
                 }

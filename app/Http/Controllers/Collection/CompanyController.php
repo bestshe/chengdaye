@@ -87,7 +87,7 @@ class CompanyController extends Controller
                 $remote_id = $ent->id;
                 $fcBusinesslicenseno = $ent->fcBusinesslicenseno;
                 //查询是否存在;
-                $repeat_ent = DB::table('get_gd_jy_company_info')
+                $repeat_ent = DB::table('get_dg_jy_company_info')
                     ->where(['remote_id'=>$remote_id,'fcBusinesslicenseno'=>$fcBusinesslicenseno])
                     ->first();
                 //转换企业性质
@@ -122,7 +122,7 @@ class CompanyController extends Controller
                     if ( count($ent_arr[$key]) ){
                         $ent_arr[$key] = array_add($ent_arr[$key], 'updated_at', time());
                         //更新数据
-                        DB::table('get_gd_jy_company_info')->where('id',$repeat_ent->id)->update($ent_arr[$key]);
+                        DB::table('get_dg_jy_company_info')->where('id',$repeat_ent->id)->update($ent_arr[$key]);
                         $update_ent_arr[$key] = array_add($update_ent_arr[$key], 'title', $ent->fcEntname.'===========已修改');
                         $update_ent_arr[$key] = array_add($update_ent_arr[$key], 'sn', $ent->fcBusinesslicenseno.'===========已修改');
                     }else{
@@ -155,7 +155,7 @@ class CompanyController extends Controller
                         'updated_at' => time()
                     ];
                     //插入数据
-                    DB::table('get_gd_jy_company_info')->insert($ent_arr[$key]);
+                    DB::table('get_dg_jy_company_info')->insert($ent_arr[$key]);
                     $update_ent_arr[$key] = array_add($update_ent_arr[$key], 'title', $ent->fcEntname.'===========新插入');
                     $update_ent_arr[$key] = array_add($update_ent_arr[$key], 'sn', $ent->fcBusinesslicenseno.'===========新插入');
                 }
