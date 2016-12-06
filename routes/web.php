@@ -21,3 +21,7 @@ Route::get('/home', 'HomeController@index');
 
 Route::get('/CompanyPages', 'Collection\CompanyController@CompanyPages');
 Route::get('/Companyinfos', 'Collection\CompanyController@Companyinfos');
+
+Route::get('/cert', 'Collection\cert@addcert');
+Route::get('/CompanyCerts', 'Collection\cert@get_company_cert');
+Route::get('/entlist', 'Collection\export@entlist');
