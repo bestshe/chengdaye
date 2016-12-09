@@ -24,4 +24,5 @@ Route::get('/Companyinfos', 'Collection\CompanyController@Companyinfos');
 
 Route::get('/cert', 'Collection\cert@addcert');
 Route::get('/CompanyCerts', 'Collection\cert@get_company_cert');
+Route::get('/NullCerts', 'Collection\cert@Null_cert');
 Route::get('/entlist', 'Collection\export@entlist');

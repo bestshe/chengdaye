@@ -111,17 +111,26 @@ class cert extends Controller
                 //重置处理数据
                 $fdCertstartdate = self::date_format($cert['fdCertstartdate']);
                 $fdCertenddate = self::date_format($cert['fdCertenddate']);
+                $certname = self::replace_certname($cert['fcEntcertcaption']);
+                //此企业的资质证书号为D151079537、D251566685
+                if ( $remote_id = '2c9296bf586d1d87015870cf0e522f03' ){
+                    if ( $m < 2 ) {
+                        $certs['fcCertfilecode'] = 'D151079537';
+                    }else{
+                        $certs['fcCertfilecode'] = 'D251566685';
+                    }
+                }
                 $cert_list = [];
                 $update_arr[$n] = [];
                 if ( $repeat_cert ){
                     $cert_list = self::compare_local_remote($cert_list,'remote_ent_id',$repeat_cert->remote_ent_id,$remote_id);
-                    $bc_id = self::local_cert_id($cert['fcEntcertcaption']);
+                    $bc_id = self::local_cert_id($certname);
                     $cert_list = self::compare_local_remote($cert_list,'bc_id',$repeat_cert->bc_id,$bc_id);
                     $cert_list = self::compare_local_remote($cert_list,'cert_file_code',$repeat_cert->cert_file_code,$certs['fcCertfilecode']);
                     $agency_id = self::local_agency_id($certs['fcCertfileauditorgan']);
                     $cert_list = self::compare_local_remote($cert_list,'agency_id',$repeat_cert->agency_id,$agency_id);
                     $cert_list = self::compare_local_remote($cert_list,'agency',$repeat_cert->agency,$certs['fcCertfileauditorgan']);
-                    $cert_list = self::compare_local_remote($cert_list,'fcEntcertcaption',$repeat_cert->fcEntcertcaption,$cert['fcEntcertcaption']);
+                    $cert_list = self::compare_local_remote($cert_list,'fcEntcertcaption',$repeat_cert->fcEntcertcaption,$certname);
                     $cert_list = self::compare_local_remote($cert_list,'fdCertstartdate',$repeat_cert->fdCertstartdate,$fdCertstartdate);
                     $cert_list = self::compare_local_remote($cert_list,'fdCertenddate',$repeat_cert->fdCertenddate,$fdCertenddate);
                     if ( count($cert_list) ){
@@ -141,7 +150,7 @@ class cert extends Controller
                     //远程证书ID
                     $cert_list['remote_cert_id'] = $certs['id'];
                     //本地资质分类ID
-                    $cert_list['bc_id'] = self::local_cert_id($cert['fcEntcertcaption']);
+                    $cert_list['bc_id'] = self::local_cert_id($certname);
                     //证书号
                     $cert_list['cert_file_code'] = $certs['fcCertfilecode'];
                     //颁发机构
@@ -149,7 +158,7 @@ class cert extends Controller
                     //颁发机构
                     $cert_list['agency'] = $certs['fcCertfileauditorgan'];
                     //资质名称
-                    $cert_list['fcEntcertcaption'] = $cert['fcEntcertcaption'];
+                    $cert_list['fcEntcertcaption'] = $certname;
                     //资质编号
                     $cert_list['cert_code'] = $cert['fcEntcertcode'];
                     //有效期
@@ -173,6 +182,7 @@ class cert extends Controller
         header("refresh:1;url=".$next_url);
         exit;
     }
+
     //查询远程对应的本地资质分类ID
     public function local_cert_id($remote_data)
     {
@@ -224,4 +234,53 @@ class cert extends Controller
             return $arr;
         }
     }
+    //转换资质名称
+    public function replace_certname($name){
+        $name = trim($name);
+        $name = str_replace('壹级','一级',$name);
+        $name = str_replace('贰级','二级',$name);
+        $name = str_replace('叁级','三级',$name);
+        $name = str_replace('肆级','四级',$name);
+        $name = str_replace('伍级','五级',$name);
+        $name = str_replace('分项','',$name);
+        switch ($name)
+        {
+            case '防水防腐保温工程专业承包二级':return '防腐防水防腐保温工程专业承包二级';break;
+            case '防水防腐保温工程专业承包一级':return '防腐防水防腐保温工程专业承包一级';break;
+            case '预拌混凝土专业承包不分 等级':return '预拌混凝土专业承包';break;
+            case '公路交通工程（公路机电工程）专业承包':return '公路交通工程（公路机电工程）专业承包一级';break;
+            case '公路交通工程（公路安全设施）专业承包':return '公路交通工程（公路安全设施）专业承包一级';break;
+            case '特种工程专业承包不分等级':return '特种工程专业承包';break;
+            case '特种工程专业承包（结构补强） 不分等级':return '特种工程（结构补强）专业承包';break;
+            case '特种工程专业承包（建筑物纠偏和平移） 不分等级':return '特种工程（建筑物纠偏和平移）专业承包';break;
+            case '特种工程专业承包（特种防雷） 不分等级':return '特种工程（特种防雷）专业承包';break;
+            case '特种工程专业承包（特殊设备起重吊装）不分等级':return '特种工程（特种设备的起重吊装）专业承包';break;
+            default:return $name;break;//其它
+        }
+    }
+
+    public function Null_cert()
+    {
+        //->where(['bc_id' => null,'fcEntcertcaption' => '特种工程专业承包不分等级'])
+        $data = DB::table('get_dg_jy_company_cert')
+            ->select('id','fcEntcertcaption')
+            ->where(['bc_id' => null])
+            ->get();
+        if (!count($data)){
+            echo '没有';
+            exit;
+        }
+        foreach ($data as $key=>$item) {
+            //echo $key.'=>'.$item->id.'***************************************************';
+            $arrs[$key] = ['id' => $item->id,'fcEntcertcaption' => $item->fcEntcertcaption];
+            //插入数据
+            /*DB::table('get_dg_jy_company_cert')->where('id',$item->id)
+                ->update([
+                    'bc_id' => 51,
+                    'fcEntcertcaption' => '特种工程专业承包'
+                ]);*/
+        }
+        return $arrs;
+    }
+    
 }
