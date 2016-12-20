@@ -112,14 +112,6 @@ class cert extends Controller
                 $fdCertstartdate = self::date_format($cert['fdCertstartdate']);
                 $fdCertenddate = self::date_format($cert['fdCertenddate']);
                 $certname = self::replace_certname($cert['fcEntcertcaption']);
-                //此企业的资质证书号为D151079537、D251566685
-                if ( $remote_id = '2c9296bf586d1d87015870cf0e522f03' ){
-                    if ( $m < 2 ) {
-                        $certs['fcCertfilecode'] = 'D151079537';
-                    }else{
-                        $certs['fcCertfilecode'] = 'D251566685';
-                    }
-                }
                 $cert_list = [];
                 $update_arr[$n] = [];
                 if ( $repeat_cert ){

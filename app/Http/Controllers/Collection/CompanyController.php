@@ -98,7 +98,10 @@ class CompanyController extends Controller
                 $fdVaildenddate = self::date_format($ent->fdVaildenddate);
                 $fdSafelicencesdate = self::date_format($ent->fdSafelicencesdate);
                 $fdSafelicenceedate = self::date_format($ent->fdSafelicenceedate);
-
+                $contact_tel = $ent->fcEntinfodeclarepersontel;
+                if ( strlen($contact_tel) > 11  ){
+                    $contact_tel = null;
+                }
                 $ent_arr[$key] = [];
                 $update_ent_arr[$key] = [];
                 if ( $repeat_ent ) {
@@ -118,7 +121,7 @@ class CompanyController extends Controller
                     $ent_arr[$key] = self::compare_local_remote($ent_arr[$key],'fdSafelicencesdate',$repeat_ent->fdSafelicencesdate,$fdSafelicencesdate);
                     $ent_arr[$key] = self::compare_local_remote($ent_arr[$key],'fdSafelicenceedate',$repeat_ent->fdSafelicenceedate,$fdSafelicenceedate);
                     $ent_arr[$key] = self::compare_local_remote($ent_arr[$key],'fcEntinfodeclareperson',$repeat_ent->fcEntinfodeclareperson,$ent->fcEntinfodeclareperson);
-                    $ent_arr[$key] = self::compare_local_remote($ent_arr[$key],'fcEntinfodeclarepersontel',$repeat_ent->fcEntinfodeclarepersontel,$ent->fcEntinfodeclarepersontel);
+                    $ent_arr[$key] = self::compare_local_remote($ent_arr[$key],'fcEntinfodeclarepersontel',$repeat_ent->fcEntinfodeclarepersontel,$contact_tel);
                     if ( count($ent_arr[$key]) ){
                         $ent_arr[$key] = array_add($ent_arr[$key], 'updated_at', time());
                         //更新数据
@@ -150,7 +153,7 @@ class CompanyController extends Controller
                         'fdSafelicencesdate' => $fdSafelicencesdate,
                         'fdSafelicenceedate' => $fdSafelicenceedate,
                         'fcEntinfodeclareperson' => $ent->fcEntinfodeclareperson,
-                        'fcEntinfodeclarepersontel' => $ent->fcEntinfodeclarepersontel,
+                        'fcEntinfodeclarepersontel' => $contact_tel,
                         'created_at' => time(),
                         'updated_at' => time()
                     ];
