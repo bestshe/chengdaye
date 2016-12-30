@@ -35,10 +35,13 @@ class CompanyController extends Controller
             );
             //然后可以把页面源码或者HTML片段传给QueryList
             $data = QueryList::Query($url,$rules)->data;
-            preg_match('/\d+/', $data[0]['total_pages'],$arr);
+            preg_match_all('/\d+/', $data[0]['total_pages'],$arr);
+            //print_r($arr[0][0]);
+            //return ;
             //拿到企业信息总页数；
-            $total_pages = (int)$arr[0];
-            $get_json = ['total_pages'=>$total_pages];
+            $total_pages = (int)$arr[0][0];
+            $total_records  = (int)$arr[0][1];
+            $get_json = ['total_pages'=>$total_pages,'total_records'=>$total_records];
             //写入数据库中
             DB::table('get_main_info')
                 ->where('id', 1)
@@ -83,6 +86,9 @@ class CompanyController extends Controller
             //中间计算时间
             $mtime = microtime(true);
             //return $data->ls;
+            /*if ( count($data->ls) ){
+                echo count($data->ls).'---GetCompanyList采集出错了';
+            }*/
             foreach($data->ls as $key=>$ent){
                 $remote_id = $ent->id;
                 $fcBusinesslicenseno = $ent->fcBusinesslicenseno;
@@ -199,18 +205,6 @@ class CompanyController extends Controller
     public function get_ent_type($typeid){
         switch ($typeid)
         {
-            /*
-             * case "100":return "国有全资"; break;
-            case "110":return "集体全资"; break;
-            case "130":return "股份合作"; break;
-            case "140":return "联 营"; break;
-            case "149":return "其他联营"; break;
-            case "142":return "集体联营"; break;
-            case "141":return "国有联营"; break;
-            case "150":return "有限责任(公司)"; break;
-            case "159":return "股份有限公司";break;
-            case "160":return "有限合伙企业"; break;
-            */
             case 100:return 1;break;//国有全资
             case 110:return 2;break;//集体全资
             case 130:return 3;break;//股份合作

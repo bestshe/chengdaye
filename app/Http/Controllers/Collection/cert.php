@@ -145,7 +145,7 @@ class cert extends Controller
                     $cert_list['bc_id'] = self::local_cert_id($certname);
                     //证书号
                     $cert_list['cert_file_code'] = $certs['fcCertfilecode'];
-                    //颁发机构
+                    //颁发机构ID
                     $cert_list['agency_id'] = self::local_agency_id($certs['fcCertfileauditorgan']);
                     //颁发机构
                     $cert_list['agency'] = $certs['fcCertfileauditorgan'];

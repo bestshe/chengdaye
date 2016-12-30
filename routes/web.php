@@ -29,3 +29,5 @@ Route::get('/TalentCerts', 'Collection\Preson@get_talent_certs');
 Route::get('/NullCerts', 'Collection\cert@Null_cert');
 
 Route::get('/entlist', 'Collection\export@entlist');
+
+Route::get('/test', 'Collection\export@test');
