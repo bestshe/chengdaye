@@ -1,0 +1,1 @@
+<?php/** * Created by PhpStorm. * User: chayton * Date: 2017/1/30 * Time: 下午2:55 */namespace App\Service\DGJY;use App\Models\DGJY\CompanyInfo;class CompanyInfoService{    private $companyInfo;    public function __construct(CompanyInfo $companyInfo)    {        $this->companyInfo = $companyInfo;    }}
