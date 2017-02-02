@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class Person extends Model
 {
     //
-    protected $table = 'get_dg_jy_person';
+    protected $table = 'get_dgjy_person';
 
     public $timestamps = false;
 }

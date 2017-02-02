@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 class CompanyCert extends Model
 {
     //
-    protected $table = 'get_dg_jy_company_cert';
+    protected $table = 'get_dgjy_company_cert';
 
     public $timestamps = false;
 }

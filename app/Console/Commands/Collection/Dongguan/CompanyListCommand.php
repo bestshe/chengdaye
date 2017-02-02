@@ -88,7 +88,7 @@ class CompanyListCommand extends Command
         Cache::put('get_dg_main_info', $get_dg_main_info, 1500);
         $update_pages = $total_pages - $yestd_total_pages;
         //没有新页面不更新
-        if ( $update_pages == 0 ) {
+        if ( $update_pages == 0 || $update_pages == 1 ) {
             dispatch(new GetCompanyList(1));
             $this->info($cur_time.' —— company_list_command采集第一页成功');
             return true;
@@ -96,7 +96,7 @@ class CompanyListCommand extends Command
         for ($page = 1 ; $page <= $update_pages ; $page++ ){
             dispatch(new GetCompanyList($page));
         }
-        $this->info($cur_time.' —— company_list_command采集$update_pages页成功');
+        $this->info($cur_time.' —— company_list_command采集'.$update_pages.'页成功');
         return true;
     }
 }
