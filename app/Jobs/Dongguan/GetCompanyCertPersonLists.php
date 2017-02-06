@@ -37,7 +37,7 @@ class GetCompanyCertPersonLists implements ShouldQueue
     {
         $cur_time = date('y-m-d H:i:s',time());
         if (!Cache::has('get_dg_main_info')) {
-            Log::info($cur_time.' —— GetCompanyCertPresonLists采集出错了,代码01');
+            Log::info($cur_time.' —— GetCompanyCertPersonLists采集出错了,代码01');
             return true;
         }
         $get_dg_main_info = json_decode(Cache::get('get_dg_main_info'));
@@ -48,7 +48,7 @@ class GetCompanyCertPersonLists implements ShouldQueue
         $ent = $this->companyInfoService->getByWhere('company',$where,['remote_id']);
 
         if ( !$ent ){
-            Log::info($cur_time.' —— GetCompanyCertPresonLists ——　'.$this->ent_id.'采集出错了,代码02');
+            Log::info($cur_time.' —— GetCompanyCertPersonLists ——　'.$this->ent_id.'采集出错了,代码02');
             return true;
         }
         //采集开始
@@ -64,15 +64,21 @@ class GetCompanyCertPersonLists implements ShouldQueue
             $cert_arr = str_replace('qualificationList:ko.observableArray(','',$cert_arr[0][0]);
             $cert_arr = str_replace(')','',$cert_arr);
             $cert_arr = json_decode($cert_arr,true);
+            foreach ($cert_arr as $n=>$certs){
+
+            }
         }else{
-            Log::info($cur_time.' —— GetCompanyCertPresonLists —— '.$ent->remote_id.'企业没有资质.');
+            Log::info($cur_time.' —— GetCompanyCertPersonLists —— '.$ent->remote_id.'企业没有资质.');
         }
         if ( count($person_arr[0]) ){
             $person_arr = str_replace('entpersonInfolist:ko.observableArray(','',$person_arr[0][0]);
             $person_arr = str_replace(')','',$person_arr);
             $person_arr = json_decode($person_arr,true);
+            foreach ($person_arr as $n=>$person){
+
+            }
         }else{
-            Log::info($cur_time.' —— GetCompanyCertPresonLists —— '.$ent->remote_id.'企业没有人才.');
+            Log::info($cur_time.' —— GetCompanyCertPersonLists —— '.$ent->remote_id.'企业没有人才.');
         }
         return true;
     }

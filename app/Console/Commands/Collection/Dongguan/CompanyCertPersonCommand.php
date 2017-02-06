@@ -4,10 +4,10 @@ namespace App\Console\Commands\Collection\Dongguan;
 
 use App\Service\DGJY\CompanyInfoService;
 use Illuminate\Console\Command;
-use App\Jobs\Dongguan\GetCompanyCertPresonLists;
+use App\Jobs\Dongguan\GetCompanyCertPersonLists;
 use Cache,DB,Log;
 
-class CompanyCertPresonCommand extends Command
+class CompanyCertPersonCommand extends Command
 {
     /**
      * The name and signature of the console command.
@@ -49,7 +49,7 @@ class CompanyCertPresonCommand extends Command
         //
         $cur_time = date('y-m-d H:i:s',time());
         if (!Cache::has('get_dg_main_info')) {
-            $this->info($cur_time.' —— CompanyCertPresonCommand采集出错了,代码01');
+            $this->info($cur_time.' —— CompanyCertPersonCommand采集出错了,代码01');
             return true;
         }
         //$get_dg_main_info = json_decode(Cache::get('get_dg_main_info'));
@@ -58,7 +58,7 @@ class CompanyCertPresonCommand extends Command
         }else{
             $Rtable = 'get_dgjy_company_info as ent';
             $Rwhere = ['get.getid'=>'ent.id'];
-            $where = ['get.remote_id_type'=>1,'get.isget'=>1,'ent.no_import'=>0];
+            $where = ['get.remote_id_type'=>1,'get.is_get'=>1,'ent.no_import'=>0];
             $fields = ['ent.id'];
             $ent_ids = $this->companyInfoService->collectEnt($Rtable,$Rwhere,$where,$fields);
         }
@@ -66,8 +66,8 @@ class CompanyCertPresonCommand extends Command
             return true;
         }
         foreach ($ent_ids as $ent_id ){
-            dispatch(new GetCompanyCertPresonLists($ent_id->id));
-            $this->info($cur_time.' —— CompanyCertPresonCommand采集加入队列 '.$ent_id->id.' 成功');
+            dispatch(new GetCompanyCertPersonLists($ent_id->id));
+            $this->info($cur_time.' —— CompanyCertPersonCommand采集加入队列 '.$ent_id->id.' 成功');
         }
         return true;
     }
