@@ -5,12 +5,12 @@ namespace App\Console\Commands\Collection\Dongguan;
 use App\Service\DGJY\CompanyInfoService;
 use Illuminate\Console\Command;
 use App\Jobs\Dongguan\GetCompanyCertPersonLists;
-use Cache,DB,Log;
 
 class CompanyCertPersonCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 任务调度的命令名称.
+     * 采集企业资质列表和人才列表命令
      *
      * @var string
      */
@@ -21,17 +21,11 @@ class CompanyCertPersonCommand extends Command
      *
      * @var string
      */
-    protected $description = '查询东莞公共资源交易中心企业资质和人才信息，每天凌晨00:05执行一次';
+    protected $description = '查询东莞公共资源交易中心企业资质和人才信息，每天凌晨00:20执行一次';
 
     protected $initial;
-
     private $companyInfoService;
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
     public function __construct(CompanyInfoService $companyInfoService)
     {
         parent::__construct();
@@ -40,7 +34,7 @@ class CompanyCertPersonCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 执行命令
      *
      * @return mixed
      */
@@ -48,26 +42,20 @@ class CompanyCertPersonCommand extends Command
     {
         //
         $cur_time = date('y-m-d H:i:s',time());
-        if (!Cache::has('get_dg_main_info')) {
-            $this->info($cur_time.' —— CompanyCertPersonCommand采集出错了,代码01');
-            return true;
-        }
-        //$get_dg_main_info = json_decode(Cache::get('get_dg_main_info'));
         if ( $this->initial ){
             $ent_ids = $this->companyInfoService->getByWhere('company',['no_import'=>0],['id'],0);
         }else{
-            $Rtable = 'get_dgjy_company_info as ent';
-            $Rwhere = ['get.getid'=>'ent.id'];
-            $where = ['get.remote_id_type'=>1,'get.is_get'=>1,'ent.no_import'=>0];
-            $fields = ['ent.id'];
-            $ent_ids = $this->companyInfoService->collectEnt($Rtable,$Rwhere,$where,$fields);
+            $where = ['remote_id_type'=>1,'isget'=>1];
+            $ent_ids = $this->companyInfoService->getByWhere('collect',$where,['get_id as id'],0);
         }
-        if ( !$ent_ids ){
+        if ( !count($ent_ids) ){
+            $this->info($cur_time.' —— CompanyCertPersonCommand —— 没有要更新的企业');
             return true;
         }
+        //推送到Job队列执行每个采集
         foreach ($ent_ids as $ent_id ){
             dispatch(new GetCompanyCertPersonLists($ent_id->id));
-            $this->info($cur_time.' —— CompanyCertPersonCommand采集加入队列 '.$ent_id->id.' 成功');
+            $this->info($cur_time.' —— CompanyCertPersonCommand —— 采集加入队列 '.$ent_id->id.' 成功');
         }
         return true;
     }

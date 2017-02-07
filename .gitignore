@@ -8,3 +8,4 @@ Homestead.yaml
 composer.lock
 .DS_Store
 .gitignore
+.env

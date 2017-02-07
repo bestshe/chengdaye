@@ -111,9 +111,13 @@ class export extends Controller
         $info['fnIsjtotherprovinces'] = 25;//是否在公路建设市场信用备案
         $info['fcJtintogdadress'] = 26;//公路建设市场信用备案信息
 
-        $arr = DB::table('get_dgjy_company_info')->where('remote_id','2c9296be5896646a0158998c5aa60822')->first();
+        $arr = DB::table('get_dgjy_company_info')->get();
 
-        return $this->HandleInfo($info,(array)$arr);
+        foreach ($arr as $value){
+            echo $value->id.'<br>';
+        }
+
+        //return $this->HandleInfo($info,(array)$arr);
 
 
     }

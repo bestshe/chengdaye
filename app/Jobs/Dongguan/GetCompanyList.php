@@ -9,7 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 use App\Service\DGJY\PublicFun;
-use Cache,DB,Log;
+use Cache,Log;
 
 class GetCompanyList implements ShouldQueue
 {
@@ -76,11 +76,11 @@ class GetCompanyList implements ShouldQueue
             $info['fcEntname'] = $this->fun->ValidData($ent->fcEntname);//公司名称
             $info['fcArtname'] = $this->fun->ValidData($ent->fcArtname);//法人
             $info['fcArtpapersn'] = $this->fun->ValidData($ent->fcArtpapersn);//法人身份证号码
-            $info['fnEntstatus'] = $this->fun->ValidData((int)$ent->fnEntstatus);//企业营业执照状态
+            $info['fnEntstatus'] = (int)$this->fun->ValidData($ent->fnEntstatus);//企业营业执照状态
             $info['fcEntpropertysn'] = $ent_type;//企业性质
             $info['fdBuilddate'] = $this->fun->DateFormat($ent->fdBuilddate);//企业注册日期
             $info['fdVaildenddate'] = $this->fun->DateFormat($ent->fdVaildenddate);//企业注册失效日期
-            $info['fcBelongareasn'] = $this->fun->ValidData((int)$ent->fcBelongareasn);//企业所在区域编码
+            $info['fcBelongareasn'] = (int)$this->fun->ValidData($ent->fcBelongareasn);//企业所在区域编码
             $info['fmEnrolfund'] = $this->fun->ValidData($ent->fmEnrolfund);//注册资金
             $info['fcBusinesslicenseno'] = $this->fun->ValidData($ent->fcBusinesslicenseno);//企业注册号
             $info['fcOrganizationcode'] = $this->fun->ValidData($ent->fcOrganizationcode);//企业三证合一号
@@ -92,11 +92,11 @@ class GetCompanyList implements ShouldQueue
             $info['fdSafelicenceedate'] = $this->fun->DateFormat($ent->fdSafelicenceedate);//安全生产许可结束日期
             $info['fcEntinfodeclareperson'] = $this->fun->ValidData($ent->fcEntinfodeclareperson);//经办人姓名
             $info['fcEntinfodeclarepersontel'] = $contact_tel;//经办人手机号码
-            $info['fnIsotherprovinces'] = $this->fun->ValidData((int)$ent->fnIsotherprovinces);//是否进粤企业
+            $info['fnIsotherprovinces'] = (int)$this->fun->ValidData($ent->fnIsotherprovinces);//是否进粤企业
             $info['fcIntogdadress'] = $this->fun->ValidData($ent->fcIntogdadress);//进粤信息
-            $info['fnIsswotherprovinces'] = $this->fun->ValidData((int)$ent->fnIsswotherprovinces);//是否在水利厅备案
+            $info['fnIsswotherprovinces'] = (int)$this->fun->ValidData($ent->fnIsswotherprovinces);//是否在水利厅备案
             $info['fcSwintogdadress'] = $this->fun->ValidData($ent->fcSwintogdadress);//水利厅备案信息
-            $info['fnIsjtotherprovinces'] = $this->fun->ValidData((int)$ent->fnIsjtotherprovinces);//是否在公路建设市场信用备案
+            $info['fnIsjtotherprovinces'] = (int)$this->fun->ValidData($ent->fnIsjtotherprovinces);//是否在公路建设市场信用备案
             $info['fcJtintogdadress'] = $this->fun->ValidData($ent->fcJtintogdadress);//公路建设市场信用备案信息
             $info['no_import'] = 0;//是否导入库内,1不导入,0导入
             if ( empty($info['fcSafelicencenumber']) || empty($info['fdSafelicencesdate'])  || empty($info['fdSafelicenceedate']) ){
@@ -110,7 +110,7 @@ class GetCompanyList implements ShouldQueue
                 if ( count($updateInfo) ){
                     $resultUpdate = $this->companyInfoService->UpdateByWhere('companyinfo',['id'=>$has->id],$updateInfo);
                     //更新是否采集标记
-                    $resultCollect = $this->companyInfoService->markCollect($has->id,$remote_id,1);
+                    $resultCollect = $this->companyInfoService->markCollect($has->id,$remote_id,1,1);
                     if ( $resultUpdate === false ){
                         Log::info($cur_time.' —— GetCompanyList采集出错了,代码03');
                     }
@@ -118,23 +118,19 @@ class GetCompanyList implements ShouldQueue
                         Log::info($cur_time.' —— GetCompanyList采集出错了,代码04');
                     }
                 }
-                return true;
+            }else{
+                //插入数据
+                $get_id = $this->companyInfoService->insertInfo('companyinfo',$info);
+                //更新是否采集标记
+                $resultCollect = $this->companyInfoService->markCollect($get_id,$remote_id,1,1);
+                if ( $get_id === false ){
+                    Log::info($cur_time.' —— GetCompanyList —— 采集出错了,代码05');
+                }
+                if ( $resultCollect === false ){
+                    Log::info($cur_time.' —— GetCompanyList —— 采集出错了,代码06');
+                }
+                Log::info($cur_time.' —— GetCompanyList —— 采集'.$fcEntname.'---企业信息成功');
             }
-            //插入数据
-            $get_id = $this->companyInfoService->insertInfo('companyinfo',$info);
-            //更新是否采集标记
-            $resultCollect = $this->companyInfoService->markCollect($get_id,$remote_id,1);
-            if ( $get_id === false ){
-                Log::info($cur_time.' —— GetCompanyList采集出错了,代码05');
-            }
-            if ( $resultCollect === false ){
-                Log::info($cur_time.' —— GetCompanyList采集出错了,代码06');
-            }
-
-            Log::info($cur_time.'---GetCompanyList采集---'.$fcEntname.'---企业信息成功');
-
-            return true;
-
         }
     }
 

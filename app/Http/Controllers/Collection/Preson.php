@@ -134,7 +134,7 @@ class Preson extends Controller
         if ( !$id ){
             return '非法入内';
         }
-        $presons = DB::table('get_dg_jy_person')
+        $presons = DB::table('get_dgjy_person')
             ->select('remote_person_id')
             ->where('id',$id)
             ->first();
@@ -161,6 +161,7 @@ class Preson extends Controller
             header("refresh:1;url=".$next_url);
             exit;
         }
+
         $data_item = self::merge_data($data_item);
         foreach ($data_item as $n => $certs){
             preg_match_all('/(\d+)-(\d+)-(\d+)/i',$certs['validate'],$valiarr);

@@ -10,32 +10,28 @@ use Cache;
 class CompanyListCommand extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 任务调度的命令名称.
+     * 采集企业列表页数和总数命令
      *
      * @var string
      */
     protected $signature = 'company_list_command';
 
     /**
-     * The console command description.
+     * 说明.
      *
      * @var string
      */
-    protected $description = '查询东莞公共资源交易中心企业列表信息，每天凌晨00:00执行一次';
+    protected $description = '查询东莞公共资源交易中心企业列表页数和总数，每天凌晨00:00执行一次';
 
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         parent::__construct();
     }
 
     /**
-     * Execute the console command.
+     * 执行命令.
      *
      * @return mixed
      */
@@ -79,7 +75,7 @@ class CompanyListCommand extends Command
                 'url'           => 'https://www.dgzb.com.cn/ggzy/website/WebPagesManagement/CreditSystem/Enterprise/CertfileList?fcCertfileid=',
                 'desc'          => '获取单个资质信息.',
             ],
-            'company_preson' => [
+            'company_person' => [
                 'title'         => '采集企业单个人才',
                 'url'           => 'https://www.dgzb.com.cn/ggzy/website/WebPagesManagement/EnterPublic/EntRegView?id=',
                 'desc'          => '获取单个人才信息.',
@@ -87,7 +83,7 @@ class CompanyListCommand extends Command
         ];
         Cache::put('get_dg_main_info', $get_dg_main_info, 1500);
         $update_pages = $total_pages - $yestd_total_pages;
-        //没有新页面不更新
+        //没有新页面或更新第一页
         if ( $update_pages == 0 || $update_pages == 1 ) {
             dispatch(new GetCompanyList(1));
             $this->info($cur_time.' —— company_list_command采集第一页成功');
