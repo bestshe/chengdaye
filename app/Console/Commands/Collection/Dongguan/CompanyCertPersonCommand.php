@@ -2,11 +2,12 @@
 
 namespace App\Console\Commands\Collection\Dongguan;
 
+use App\Console\Commands\BaseCommand;
 use App\Service\DGJY\CompanyInfoService;
-use Illuminate\Console\Command;
 use App\Jobs\Dongguan\GetCompanyCertPersonLists;
+use App\Service\JobStatusService;
 
-class CompanyCertPersonCommand extends Command
+class CompanyCertPersonCommand extends BaseCommand
 {
     /**
      * 任务调度的命令名称.
@@ -25,12 +26,14 @@ class CompanyCertPersonCommand extends Command
 
     protected $initial;
     private $companyInfoService;
+    private $jobStatusService;
 
-    public function __construct(CompanyInfoService $companyInfoService)
+    public function __construct(CompanyInfoService $companyInfoService,JobStatusService $jobStatusService)
     {
         parent::__construct();
         $this->initial = env('COLLECT_INITIAL',true);
         $this->companyInfoService = $companyInfoService;
+        $this->jobStatusService = $jobStatusService;
     }
 
     /**
@@ -48,14 +51,25 @@ class CompanyCertPersonCommand extends Command
             $where = ['remote_id_type'=>1,'isget'=>1];
             $ent_ids = $this->companyInfoService->getByWhere('collect',$where,['get_id as id'],0);
         }
+        if ( $ent_ids === false ){
+            $title = '在查询企业是否要更新资质列表和人才列表时出错了';
+            $this->jobStatusService->jobFail($this->signature,$title);
+            $this->info($cur_time.' —— '.$title);
+            return true;
+        }
+
         if ( !count($ent_ids) ){
-            $this->info($cur_time.' —— CompanyCertPersonCommand —— 没有要更新的企业');
+            $title = '在查询不存在需要更新的企业资质列表和人才列表.';
+            $this->jobStatusService->jobNull($this->signature,$title);
+            $this->info($cur_time.' —— '.$title);
             return true;
         }
         //推送到Job队列执行每个采集
         foreach ($ent_ids as $ent_id ){
             dispatch(new GetCompanyCertPersonLists($ent_id->id));
-            $this->info($cur_time.' —— CompanyCertPersonCommand —— 采集加入队列 '.$ent_id->id.' 成功');
+            $title = '采集企业资质列表和人才列表,get_dgjy_company_info表'.$ent_id->id.',加入队列成功';
+            $this->jobStatusService->jobSuccess($this->signature,$title);
+            $this->info($cur_time.' —— '.$title);
         }
         return true;
     }

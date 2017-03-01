@@ -82,7 +82,7 @@ class cert extends Controller
         $data = QueryList::Query($url,$rules)->data;
         preg_match_all("/qualificationList:ko\.observableArray\(\[.*?\]\)/is", $data[0]['js_content'], $arr);
         if ( !count($arr[0]) ){
-            echo '没有,不存在2';
+            echo '没有资质';
             header("refresh:1;url=".$next_url);
             exit;
         }

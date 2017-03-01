@@ -6,13 +6,14 @@ use App\Service\CertService;
 use App\Service\DGJY\CompanyCertService;
 use App\Service\DGJY\CompanyInfoService;
 use App\Service\DGJY\PublicFun;
+use App\Service\JobStatusService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
+use Illuminate\Support\Facades\Cache;
 use QL\QueryList;
-use Cache,Log;
 
 class GetCompanyCert implements ShouldQueue
 {
@@ -24,20 +25,27 @@ class GetCompanyCert implements ShouldQueue
     private $companyCertService;
     private $certService;
     private $companyInfoService;
+    private $jobStatusService;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($certFile_id,PublicFun $fun,CompanyCertService $companyCertService,
-                                CertService $certService,CompanyInfoService $companyInfoService)
+    public function __construct($certFile_id)
     {
         $this->certFile_id = $certFile_id;
+        $fun = new PublicFun();
+        $companyCertService = new CompanyCertService();
+        $certService = new CertService();
+        $companyInfoService = new CompanyInfoService();
         $this->fun = $fun;
         $this->companyCertService = $companyCertService;
         $this->certService = $certService;
         $this->companyInfoService = $companyInfoService;
+
+        $jobStatusService = new JobStatusService();
+        $this->jobStatusService = $jobStatusService;
     }
 
     /**
@@ -49,8 +57,10 @@ class GetCompanyCert implements ShouldQueue
     {
         $cur_time = date('y-m-d H:i:s',time());
         if (!Cache::has('get_dg_main_info')) {
-            Log::info($cur_time.' —— GetCompanyCert —— 采集出错了,代码01');
-            return true;
+            $title = '采集企业资质列表时,获取不到缓存get_dg_main_info内容';
+            $this->jobStatusService->jobFail('GetCompanyCert',$title);
+            $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+            return;
         }
         $get_dg_main_info = json_decode(Cache::get('get_dg_main_info'));
         $url = $get_dg_main_info->company_cert->url;
@@ -58,9 +68,17 @@ class GetCompanyCert implements ShouldQueue
         //查询是否存在该资质
         $certFile = $this->companyCertService->getOneByWhere('certFile',['id'=>$this->certFile_id],['remote_certfile_id','remote_ent_id']);
 
+        if ( $certFile === false ){
+            $title = '查询get_dgjy_company_certfile表资质是否存在ID:'.$this->certFile_id.'出错了';
+            $this->jobStatusService->jobFail('GetCompanyCert',$title);
+            $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+            return;
+        }
         if ( !$certFile ){
-            Log::info($cur_time.' —— GetCompanyCert ——　'.$this->certFile_id.' 不需要采集');
-            return true;
+            $title = '查询get_dgjy_company_certfile表资质不存在ID:'.$this->certFile_id;
+            $this->jobStatusService->jobNull('GetCompanyCert',$title);
+            $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+            return;
         }
 
         //采集开始
@@ -72,12 +90,20 @@ class GetCompanyCert implements ShouldQueue
         $data = QueryList::Query($url,$rules)->data;
         preg_match_all("/detailList: ko\.observableArray\(\[.*?\]\)/is", $data[0]['js_content'], $cert_arr);
         if ( !count($cert_arr[0]) ){
-            Log::info($cur_time.' —— GetCompanyCert —— '.$certFile->remote_cert_id.'企业没有资质.');
-            return false;
+            $title = '01采集企业资质列表时,远程企业资质列表ID:'.$certFile->remote_certfile_id.'没有资质';
+            $this->jobStatusService->jobNull('GetCompanyCert',$title);
+            $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+            return;
         }
         $data = str_replace('detailList: ko.observableArray(','',$data[0][0]);
         $data = str_replace(')','',$data);
         $data = json_decode($data,true);
+        if ( !count($data) ){
+            $title = '02采集企业资质列表时,远程企业资质列表ID:'.$certFile->remote_certfile_id.'没有资质';
+            $this->jobStatusService->jobNull('GetCompanyCert',$title);
+            $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+            return;
+        }
         //分资质入库
         foreach($data as $m=>$cert){
             $cert_id = $this->fun->ValidData($cert['id']);
@@ -114,11 +140,24 @@ class GetCompanyCert implements ShouldQueue
                     //更新是否采集标记
                     $resultCollect = $this->companyInfoService->markCollect($this->certFile_id,$certFile->remote_certfile_id,2,0);
                     if ( $resultUpdate === false ){
-                        Log::info($cur_time.' —— GetCompanyCert —— 采集 —— '.$certFile->remote_certfile_id.' —— 出错了,代码02');
+                        $updateInfo['title'] = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.',更新企业资质时出错了';
+                        $this->jobStatusService->jobFail('GetCompanyCert',$updateInfo);
+                        $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$updateInfo['title']);
+                        continue;
                     }
                     if ( $resultCollect === false ){
-                        Log::info($cur_time.' —— GetCompanyCert —— 采集 —— '.$certFile->remote_certfile_id.' —— 出错了,代码03');
+                        $title = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.',更新是否采集标记时出错了';
+                        $this->jobStatusService->jobFail('GetCompanyCert',$title);
+                        $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+                        continue;
                     }
+                    $updateInfo['title'] = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.',更新企业资质成功了';
+                    $this->jobStatusService->jobSuccess('GetCompanyCert',$updateInfo);
+                    $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$updateInfo['title']);
+                }else{
+                    $title = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.'不需要更新';
+                    $this->jobStatusService->jobNull('GetCompanyCert',$title);
+                    $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
                 }
             }else{
                 //插入数据
@@ -126,15 +165,23 @@ class GetCompanyCert implements ShouldQueue
                 //更新是否采集标记
                 $resultCollect = $this->companyInfoService->markCollect($this->certFile_id,$certFile->remote_certfile_id,2,0);
                 if ( $get_id === false ){
-                    Log::info($cur_time.' —— GetCompanyCert —— 采集 —— '.$certFile->remote_certfile_id.' —— 出错了,代码04');
+                    $cert_list['title'] = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.' 在插入企业资质时出错了';
+                    $this->jobStatusService->jobFail('GetCompanyCert',$cert_list);
+                    $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$cert_list['title']);
+                    continue;
                 }
                 if ( $resultCollect === false ){
-                    Log::info($cur_time.' —— GetCompanyCert —— 采集 —— '.$certFile->remote_certfile_id.' —— 出错了,代码05');
+                    $title = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.' 在插入是否采集标记时出错了';
+                    $this->jobStatusService->jobFail('GetCompanyCert',$title);
+                    $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$title);
+                    continue;
                 }
-                Log::info($cur_time.' —— GetCompanyCert —— 采集 —— '.$cert_id.' —— 资质成功');
+                $cert_list['title'] = '执行job采集企业资质时，远程企业资质ID为: '.$cert_id.',插入企业资质成功了';
+                $this->jobStatusService->jobSuccess('GetCompanyCert',$cert_list);
+                $this->jobStatusService->log('Job/GetCompanyCert',$cur_time.' —— '.$cert_list['title']);
+                continue;
             }
-
         }
-        return true;
+        return;
     }
 }

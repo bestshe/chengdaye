@@ -13,7 +13,10 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        \App\Console\Commands\Collection\Dongguan\CompanyListCommand::class,
+        \App\Console\Commands\Collection\Dongguan\CompanyCertPersonCommand::class,
+        \App\Console\Commands\Collection\Dongguan\CompanyCertCommand::class,
+        \App\Console\Commands\Collection\Dongguan\CompanyPersonCommand::class,
     ];
 
     /**
@@ -24,8 +27,25 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+        //采集企业信息列表
+        $schedule->command('company_list_command')
+            ->dailyAt('00:00')
+            ->sendOutputTo('storage/logs/collect/company_list_command.log', true);
+
+        //采集企业资质和人才信息
+        $schedule->command('company_cert_person_command')
+            ->dailyAt('00:20')
+            ->sendOutputTo('storage/logs/collect/company_cert_person_command.log', true);
+
+        //采集企业资质推送给job执行
+        $schedule->command('company_cert_command')
+            ->dailyAt('02:25')
+            ->sendOutputTo('storage/logs/collect/company_cert_command.log', true);
+
+        //采集企业人才证书推送给job执行
+        $schedule->command('company_person_command')
+            ->dailyAt('02:25')
+            ->sendOutputTo('storage/logs/collect/company_person_command.log', true);
     }
 
     /**

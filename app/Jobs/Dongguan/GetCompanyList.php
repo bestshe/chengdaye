@@ -3,13 +3,14 @@
 namespace App\Jobs\Dongguan;
 
 use App\Service\DGJY\CompanyInfoService;
+use App\Service\JobStatusService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 use App\Service\DGJY\PublicFun;
-use Cache,Log;
+use Illuminate\Support\Facades\Cache;
 
 class GetCompanyList implements ShouldQueue
 {
@@ -19,17 +20,23 @@ class GetCompanyList implements ShouldQueue
 
     private $fun;
     private $companyInfoService;
+    private $jobStatusService;
 
     /**
      * 采集企业信息列表的队列
      *
      */
-    public function __construct($page,PublicFun $fun,CompanyInfoService $companyInfoService)
+    public function __construct($page)
     {
         //
         $this->page = $page;
+        $fun = new PublicFun();
         $this->fun = $fun;
+        $companyInfoService = new CompanyInfoService();
         $this->companyInfoService = $companyInfoService;
+
+        $jobStatusService = new JobStatusService();
+        $this->jobStatusService = $jobStatusService;
     }
 
     /**
@@ -40,7 +47,9 @@ class GetCompanyList implements ShouldQueue
     {
         $cur_time = date('Y-m-d H:i:s',time());
         if (!Cache::has('get_dg_main_info')) {
-            Log::info($cur_time.' —— GetCompanyList采集出错了,代码01');
+            $title = '缓存get_dg_main_info的采集企业页数不存在,执行job第'.$this->page.'页';
+            $this->jobStatusService->jobFail('GetCompanyList',$title);
+            $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$title);
             return true;
         }
         $get_dg_main_info = json_decode(Cache::get('get_dg_main_info'));
@@ -50,7 +59,9 @@ class GetCompanyList implements ShouldQueue
         $data = file_get_contents($curl);
         $data = json_decode($data);
         if ( !count($data->ls) ){
-            Log::info($cur_time.' —— GetCompanyList采集出错了,代码02');
+            $title = '执行job第'.$this->page.'页的企业列表无记录';
+            $this->jobStatusService->jobNull('GetCompanyList',$title);
+            $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$title);
             return true;
         }
         foreach($data->ls as $key=>$ent){
@@ -58,11 +69,17 @@ class GetCompanyList implements ShouldQueue
             $remote_id = $ent->id;
 
             //查询是否存在;
-            $has = $this->companyInfoService->getByWhere('companyinfo',['remote_id'=>$remote_id]);
+            $has = $this->companyInfoService->getByWhere('companyInfo',['remote_id'=>$remote_id]);
+            if ( $has === false ){
+                $title = '采集企业remote_id:'.$remote_id.'时,查询get_dgjy_company_info表中是否存在该企业时出错了';
+                $this->jobStatusService->jobFail('GetCompanyList',$title);
+                $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$title);
+                continue;
+            }
 
             //转换企业性质
-            $enttypeid = $this->fun->ValidData((int)$ent->fcEntpropertysn);
-            $ent_type = $this->fun->GetEntType($enttypeid);
+            $entTypeId = $this->fun->ValidData((int)$ent->fcEntpropertysn);
+            $ent_type = $this->fun->GetEntType($entTypeId);
 
             //处理经办人联系电话
             $contact_tel = $this->fun->ValidData($ent->fcEntinfodeclarepersontel);//经办人联系电话
@@ -108,30 +125,54 @@ class GetCompanyList implements ShouldQueue
                 $updateInfo = $this->fun->HandleInfo($info,(array)$has);
                 //更新数据
                 if ( count($updateInfo) ){
-                    $resultUpdate = $this->companyInfoService->UpdateByWhere('companyinfo',['id'=>$has->id],$updateInfo);
+                    $resultUpdate = $this->companyInfoService->UpdateByWhere('companyInfo',['id'=>$has->id],$updateInfo);
                     //更新是否采集标记
                     $resultCollect = $this->companyInfoService->markCollect($has->id,$remote_id,1,1);
                     if ( $resultUpdate === false ){
-                        Log::info($cur_time.' —— GetCompanyList采集出错了,代码03');
+                        $updateInfo['title'] = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',更新企业信息时出错了';
+                        $this->jobStatusService->jobFail('GetCompanyList',json_encode($updateInfo));
+                        $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— GetCompanyList ——'.$updateInfo['title']);
+                        continue;
                     }
                     if ( $resultCollect === false ){
-                        Log::info($cur_time.' —— GetCompanyList采集出错了,代码04');
+                        $title = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',更新是否采集标记时出错了';
+                        $this->jobStatusService->jobFail('GetCompanyList',$title);
+                        $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— GetCompanyList ——'.$title);
+                        continue;
                     }
+                    $title = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',更新企业信息成功了';
+                    $this->jobStatusService->jobSuccess('GetCompanyList',$title);
+                    $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— GetCompanyList —— '.$title);
+                    continue;
                 }
+                $title = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.'不需要更新企业信息';
+                $this->jobStatusService->jobSuccess('GetCompanyList',$title);
+                $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— GetCompanyList —— '.$title);
+                continue;
             }else{
                 //插入数据
-                $get_id = $this->companyInfoService->insertInfo('companyinfo',$info);
+                $get_id = $this->companyInfoService->insertInfo('companyInfo',$info);
                 //更新是否采集标记
                 $resultCollect = $this->companyInfoService->markCollect($get_id,$remote_id,1,1);
                 if ( $get_id === false ){
-                    Log::info($cur_time.' —— GetCompanyList —— 采集出错了,代码05');
+                    $info['title'] = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',插入企业信息时出错了';
+                    $this->jobStatusService->jobFail('GetCompanyList',json_encode($info));
+                    $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$info['title']);
+                    continue;
                 }
                 if ( $resultCollect === false ){
-                    Log::info($cur_time.' —— GetCompanyList —— 采集出错了,代码06');
+                    $title = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',插入是否采集标记时出错了';
+                    $this->jobStatusService->jobFail('GetCompanyList',$title);
+                    $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$title);
+                    continue;
                 }
-                Log::info($cur_time.' —— GetCompanyList —— 采集'.$fcEntname.'---企业信息成功');
+                $title = '执行job第'.$this->page.'页企业远程ID为: '.$remote_id.',插入企业信息成功了';
+                $this->jobStatusService->jobSuccess('GetCompanyList',$title);
+                $this->jobStatusService->log('Job/GetCompanyList',$cur_time.' —— '.$title);
+                continue;
             }
         }
+        return true;
     }
 
 }

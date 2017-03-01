@@ -17,8 +17,10 @@ class CertService
     private $cert;
     private $agency;
 
-    public function __construct(Cert $cert,CertAgency $agency)
+    public function __construct()
     {
+        $cert = new Cert();
+        $agency = new CertAgency();
         $this->cert = $cert;
         $this->agency = $agency;
     }
